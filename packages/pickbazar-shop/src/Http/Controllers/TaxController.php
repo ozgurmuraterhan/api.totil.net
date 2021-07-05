@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Log;
 use PickBazar\Http\Requests\CreateTaxRequest;
 use PickBazar\Http\Requests\UpdateTaxRequest;
 use PickBazar\Database\Repositories\TaxRepository;
+use PickBazar\Exceptions\PickbazarException;
 use Prettus\Validator\Exceptions\ValidatorException;
 
 class TaxController extends CoreController
@@ -56,7 +57,7 @@ class TaxController extends CoreController
         try {
             return $this->repository->findOrFail($id);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Sorry! Tax not found.'], 404);
+            throw new PickbazarException('PICKBAZAR_ERROR.NOT_FOUND');
         }
     }
 
@@ -73,7 +74,7 @@ class TaxController extends CoreController
             $validatedData = $request->validated();
             return $this->repository->findOrFail($id)->update($validatedData);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Sorry! Tax ID does not exist.'], 404);
+            throw new PickbazarException('PICKBAZAR_ERROR.NOT_FOUND');
         }
     }
 
@@ -88,7 +89,7 @@ class TaxController extends CoreController
         try {
             return $this->repository->findOrFail($id)->delete();
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Sorry! Tax ID does not exist.'], 404);
+            throw new PickbazarException('PICKBAZAR_ERROR.NOT_FOUND');
         }
     }
 }

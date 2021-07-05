@@ -5,8 +5,10 @@ namespace PickBazar\Http\Controllers;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use PickBazar\Database\Repositories\ProductRepository;
 use PickBazar\Database\Models\Product;
+use PickBazar\Exceptions\PickbazarException;
 use PickBazar\Http\Requests\ProductCreateRequest;
 use PickBazar\Http\Requests\ProductUpdateRequest;
 
@@ -29,7 +31,7 @@ class ProductController extends CoreController
     public function index(Request $request)
     {
         $limit = $request->limit ?   $request->limit : 15;
-        return $this->repository->with(['type', 'categories', 'variations.attribute'])->paginate($limit);
+        return $this->repository->with(['type', 'categories', 'tags', 'variations.attribute'])->paginate($limit);
     }
 
     /**
@@ -40,7 +42,11 @@ class ProductController extends CoreController
      */
     public function store(ProductCreateRequest $request)
     {
-        return $this->repository->storeProduct($request);
+        if ($this->repository->hasPermission($request->user(), $request->shop_id)) {
+            return $this->repository->storeProduct($request);
+        } else {
+            throw new PickbazarException('PICKBAZAR_ERROR.NOT_AUTHORIZED');
+        }
     }
 
     /**
@@ -54,12 +60,12 @@ class ProductController extends CoreController
         try {
             $limit = isset($request->limit) ? $request->limit : 10;
             $product = $this->repository
-                ->with(['type', 'categories', 'variations.attribute.values', 'variation_options'])
+                ->with(['type', 'shop', 'categories', 'tags', 'variations.attribute.values', 'variation_options'])
                 ->findOneByFieldOrFail('slug', $slug);
             $product->related_products = $this->repository->fetchRelated($slug, $limit);
             return $product;
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Product not found!'], 404);
+            throw new PickbazarException('PICKBAZAR_ERROR.NOT_FOUND');
         }
     }
 
@@ -72,7 +78,18 @@ class ProductController extends CoreController
      */
     public function update(ProductUpdateRequest $request, $id)
     {
-        return $this->repository->updateProduct($request, $id);
+        $request->id = $id;
+        return $this->updateProduct($request);
+    }
+
+    public function updateProduct(Request $request)
+    {
+        if ($this->repository->hasPermission($request->user(), $request->shop_id)) {
+            $id = $request->id;
+            return $this->repository->updateProduct($request, $id);
+        } else {
+            throw new PickbazarException('PICKBAZAR_ERROR.NOT_AUTHORIZED');
+        }
     }
 
     /**
@@ -86,7 +103,7 @@ class ProductController extends CoreController
         try {
             return $this->repository->findOrFail($id)->delete();
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Product not found!'], 404);
+            throw new PickbazarException('PICKBAZAR_ERROR.NOT_FOUND');
         }
     }
 

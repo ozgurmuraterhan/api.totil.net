@@ -18,6 +18,8 @@ class OrderUpdateRequest extends FormRequest
     protected function getRules()
     {
         return [
+            'coupon_id'       => 'nullable|exists:PickBazar\Database\Models\Coupon,id',
+            'shop_id'         => 'exists:PickBazar\Database\Models\Shop,id',
             'products'        => 'array',
             'amount'          => 'numeric',
             'paid_total'      => 'numeric',

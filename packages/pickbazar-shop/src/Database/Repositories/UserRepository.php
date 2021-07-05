@@ -2,7 +2,6 @@
 
 namespace PickBazar\Database\Repositories;
 
-use App\Mail\ForgetPassword as MailForgetPassword;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
@@ -16,6 +15,8 @@ use PickBazar\Mail\ForgetPassword;
 use Illuminate\Support\Facades\Mail;
 use PickBazar\Database\Models\Address;
 use PickBazar\Database\Models\Profile;
+use PickBazar\Database\Models\Shop;
+use PickBazar\Exceptions\PickbazarException;
 
 class UserRepository extends BaseRepository
 {
@@ -33,6 +34,7 @@ class UserRepository extends BaseRepository
     protected $dataArray = [
         'name',
         'email',
+        'shop_id'
     ];
 
     /**
@@ -68,9 +70,11 @@ class UserRepository extends BaseRepository
             }
             $user->profile = $user->profile;
             $user->address = $user->address;
+            $user->shop = $user->shop;
+            $user->managed_shop = $user->managed_shop;
             return $user;
         } catch (ValidatorException $e) {
-            return ['message' => "Something went wrong!", 'success' => false, 'code' => 404];
+            throw new PickbazarException('PICKBAZAR_ERROR.SOMETHING_WENT_WRONG');
         }
     }
 
@@ -99,9 +103,11 @@ class UserRepository extends BaseRepository
             $user->update($request->only($this->dataArray));
             $user->profile = $user->profile;
             $user->address = $user->address;
+            $user->shop = $user->shop;
+            $user->managed_shop = $user->managed_shop;
             return $user;
         } catch (ValidationException $e) {
-            return ['message' => "Something went wrong!", 'success' => false, 'code' => 422];
+            throw new PickbazarException('PICKBAZAR_ERROR.SOMETHING_WENT_WRONG');
         }
     }
 

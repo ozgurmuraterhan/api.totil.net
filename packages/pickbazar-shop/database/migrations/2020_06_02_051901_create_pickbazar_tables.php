@@ -63,7 +63,7 @@ class CreatePickbazarTables extends Migration
             $table->string('slug');
             $table->text('description')->nullable();
             $table->unsignedBigInteger('type_id');
-            $table->foreign('type_id')->references('id')->on('types');
+            $table->foreign('type_id')->references('id')->on('types')->onDelete('cascade');
             $table->float('price')->nullable()->default(0);
             $table->float('sale_price')->nullable();
             $table->string('sku')->nullable();
@@ -105,8 +105,8 @@ class CreatePickbazarTables extends Migration
             $table->unsignedBigInteger('status');
             $table->double('amount');
             $table->double('sales_tax')->nullable();
-            $table->double('paid_total');
-            $table->double('total');
+            $table->double('paid_total')->nullable();
+            $table->double('total')->nullable();
             $table->unsignedBigInteger('coupon_id')->nullable();
             $table->double('discount')->nullable();
             $table->string('payment_id')->nullable();
@@ -115,7 +115,7 @@ class CreatePickbazarTables extends Migration
             $table->json('billing_address')->nullable();
             $table->unsignedBigInteger('logistics_provider')->nullable();
             $table->double('delivery_fee')->nullable();
-            $table->string('delivery_time');
+            $table->string('delivery_time')->nullable();
             $table->softDeletes();
             $table->timestamps();
             $table->foreign('status')->references('id')->on('order_status');
@@ -141,7 +141,7 @@ class CreatePickbazarTables extends Migration
             $table->string('slug');
             $table->string('icon')->nullable();
             $table->json('image')->nullable();
-            $table->string('details')->nullable();
+            $table->text('details')->nullable();
             $table->unsignedBigInteger('parent')->nullable();
             $table->foreign('parent')->references('id')->on('categories');
             $table->unsignedBigInteger('type_id');
@@ -175,7 +175,6 @@ class CreatePickbazarTables extends Migration
 
         Schema::create('attribute_product', function (Blueprint $table) {
             $table->id();
-            $table->double('price')->nullable();
             $table->unsignedBigInteger('attribute_value_id');
             $table->foreign('attribute_value_id')->references('id')->on('attribute_values')->onDelete('cascade');
             $table->unsignedBigInteger('product_id');

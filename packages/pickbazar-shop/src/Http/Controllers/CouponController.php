@@ -9,6 +9,7 @@ use Illuminate\Support\Collection;
 use PickBazar\Http\Requests\CouponRequest;
 use PickBazar\Http\Requests\UpdateCouponRequest;
 use PickBazar\Database\Repositories\CouponRepository;
+use PickBazar\Exceptions\PickbazarException;
 use Prettus\Validator\Exceptions\ValidatorException;
 
 class CouponController extends CoreController
@@ -56,7 +57,7 @@ class CouponController extends CoreController
         try {
             return $this->repository->findOrFail($id);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Sorry! coupon not found.'], 404);
+            throw new PickbazarException('PICKBAZAR_ERROR.NOT_FOUND');
         }
     }
     /**
@@ -74,7 +75,7 @@ class CouponController extends CoreController
         try {
             return $this->repository->verifyCoupon($code);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Sorry! Something went wrong.'], 404);
+            throw new PickbazarException('PICKBAZAR_ERROR.NOT_FOUND');
         }
     }
 
@@ -91,7 +92,7 @@ class CouponController extends CoreController
             $this->repository->findOrFail($id);
             return $this->repository->update($request->validated(), $id);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Sorry! coupon ID does not exist.'], 404);
+            throw new PickbazarException('PICKBAZAR_ERROR.NOT_FOUND');
         }
     }
 
@@ -106,7 +107,7 @@ class CouponController extends CoreController
         try {
             return $this->repository->findOrFail($id)->delete();
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Sorry! coupon ID does not exist.'], 404);
+            throw new PickbazarException('PICKBAZAR_ERROR.NOT_FOUND');
         }
     }
 }

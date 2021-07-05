@@ -45,7 +45,9 @@ input TaxUpdateInput {
 }
 
 extend type Mutation {
-    createTax(input: TaxInput @spread): Tax @create
-    updateTax(input: TaxUpdateInput @spread): Tax @update
-    deleteTax(id: ID!): Tax @delete
+    createTax(input: TaxInput @spread): Tax @create @can(ability: "super_admin")
+    updateTax(input: TaxUpdateInput @spread): Tax
+        @update
+        @can(ability: "super_admin")
+    deleteTax(id: ID!): Tax @delete @can(ability: "super_admin")
 }

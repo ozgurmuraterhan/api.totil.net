@@ -4,16 +4,20 @@ extend type Query {
         orderBy: _ @orderBy(columns: ["updated_at", "created_at", "name"])
     ): [User!]! @paginate(defaultCount: 10) @can(ability: "super_admin")
     user(id: ID @eq): User @find @can(ability: "super_admin")
-    me: User @auth
+    me: User @field(resolver: "UserQuery@me")
 }
 
 type User {
     id: ID
     name: String
     email: String
+    shop_id: Int
     created_at: DateTime
     updated_at: DateTime
     profile: Profile @hasOne
+    shops: [Shop] @hasMany
+    managed_shop: Shop @belongsTo
+    is_active: Boolean
     is_active: Boolean
     address: [Address] @hasMany
     orders: [Order] @hasMany @lazyLoad(relations: ["products", "status"])
@@ -37,6 +41,7 @@ input RegisterInput {
         )
     password: String!
     name: String!
+    permission: Permission
 }
 
 type AuthResponse {
@@ -121,7 +126,7 @@ extend type Mutation {
         @field(resolver: "AuthMutator@resetPassword")
     register(input: RegisterInput @spread): AuthResponse
         @field(resolver: "AuthMutator@register")
-    update(input: UserUpdateInput @spread): User
+    updateUser(input: UserUpdateInput @spread): User
         @update
         @can(ability: "customer")
 }

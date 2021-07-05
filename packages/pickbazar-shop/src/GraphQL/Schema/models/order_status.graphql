@@ -1,9 +1,9 @@
 extend type Query {
-    order_statuses(
+    orderStatuses(
         text: String @where(operator: "like", key: "name")
         orderBy: _ @orderBy(columns: ["updated_at", "created_at", "serial"])
     ): [OrderStatus!]! @paginate(defaultCount: 15)
-    order_status(id: ID @eq): OrderStatus @find
+    orderStatus(id: ID @eq): OrderStatus @find
 }
 
 type OrderStatus {

@@ -20,7 +20,6 @@ class InstallCommand extends Command
     {
 
         $this->info('Installing Pickbazar Dependencies...');
-
         if ($this->confirm('Do you want to migrate Tables? If you have already run this command or migrated tables then be aware, it will erase all of your data.')) {
             $this->info('Migrating Tables Now....');
 
@@ -34,16 +33,17 @@ class InstallCommand extends Command
             }
         }
 
+        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+
+        Permission::firstOrCreate(['name' => UserPermission::SUPER_ADMIN]);
+        Permission::firstOrCreate(['name' => UserPermission::CUSTOMER]);
+        Permission::firstOrCreate(['name' => UserPermission::STORE_OWNER]);
+        Permission::firstOrCreate(['name' => UserPermission::STAFF]);
+
         try {
             if ($this->confirm('Do you want to create an admin?')) {
 
                 $this->info('Provide admin credentials info to create an admin user for you.');
-
-                app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
-
-                Permission::firstOrCreate(['name' => UserPermission::SUPER_ADMIN]);
-                Permission::firstOrCreate(['name' => UserPermission::CUSTOMER]);
-
                 $name = $this->ask('Enter admin name');
                 $email = $this->ask('Enter admin email');
                 $password = $this->secret('Enter your admin password');
@@ -76,7 +76,13 @@ class InstallCommand extends Command
                     'email' =>  $email,
                     'password' =>  Hash::make($password),
                 ]);
-                $user->givePermissionTo(UserPermission::SUPER_ADMIN);
+                $user->givePermissionTo(
+                    [
+                        UserPermission::SUPER_ADMIN,
+                        UserPermission::STORE_OWNER,
+                        UserPermission::CUSTOMER,
+                    ]
+                );
                 $this->info('User Creation Successful!');
             }
         } catch (\Exception $e) {

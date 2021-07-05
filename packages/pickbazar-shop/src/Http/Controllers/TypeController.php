@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use PickBazar\Database\Models\Type;
 use PickBazar\Database\Repositories\TypeRepository;
+use PickBazar\Exceptions\PickbazarException;
 use PickBazar\Http\Requests\TypeRequest;
 use Prettus\Validator\Exceptions\ValidatorException;
 
@@ -56,7 +57,7 @@ class TypeController extends CoreController
         try {
             return $this->repository->findOneByFieldOrFail('slug', $slug);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Product Type not found!'], 404);
+            throw new PickbazarException('PICKBAZAR_ERROR.NOT_FOUND');
         }
     }
 
@@ -73,7 +74,7 @@ class TypeController extends CoreController
             $validatedData = $request->validated();
             return $this->repository->findOrFail($id)->update($validatedData);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Product Type not found!'], 404);
+            throw new PickbazarException('PICKBAZAR_ERROR.NOT_FOUND');
         }
     }
 
@@ -88,7 +89,7 @@ class TypeController extends CoreController
         try {
             return $this->repository->findOrFail($id)->delete();
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Product Type not found!'], 404);
+            throw new PickbazarException('PICKBAZAR_ERROR.NOT_FOUND');
         }
     }
 }

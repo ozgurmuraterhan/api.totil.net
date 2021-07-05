@@ -1,6 +1,6 @@
 extend type Query {
     analytics: Analytics @field(resolver: "AnalyticsQuery@analytics")
-    popular_products(limit: Int): [Product]
+    popularProducts(limit: Int, shop_id: Int): [Product]
         @field(resolver: "AnalyticsQuery@popularProducts")
 }
 
@@ -11,6 +11,7 @@ type totalYearSaleByMonth {
 
 type Analytics {
     totalRevenue: Float
+    totalShops: Float
     todaysRevenue: Float
     totalOrders: Int
     newCustomers: Int

@@ -21,6 +21,7 @@ use Pickbazar\Console\AdminCreateCommand;
 use Pickbazar\Console\CopyFilesCommand;
 use Pickbazar\Console\ImportDemoData;
 use PickBazar\Enums\ProductType;
+use PickBazar\Enums\WithdrawStatus;
 
 class ShopServiceProvider extends ServiceProvider
 {
@@ -42,6 +43,7 @@ class ShopServiceProvider extends ServiceProvider
         Permission::class,
         ShippingType::class,
         ProductType::class,
+        WithdrawStatus::class,
     ];
 
     protected $commandList = [

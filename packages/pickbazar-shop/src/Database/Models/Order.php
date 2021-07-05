@@ -65,4 +65,28 @@ class Order extends Model
     {
         return $this->belongsTo(User::class, 'customer_id');
     }
+
+    /**
+     * @return BelongsTo
+     */
+    public function shop(): BelongsTo
+    {
+        return $this->belongsTo(Shop::class, 'shop_id');
+    }
+
+    /**
+     * @return HasMany
+     */
+    public function children()
+    {
+        return $this->hasMany('PickBazar\Database\Models\Order', 'parent_id', 'id');
+    }
+
+    /**
+     * @return HasOne
+     */
+    public function parent_order()
+    {
+        return $this->hasOne('PickBazar\Database\Models\Order', 'id', 'parent_id');
+    }
 }

@@ -28,10 +28,12 @@ class OrderCreateRequest extends FormRequest
     {
         return [
             'status'           => 'required|exists:PickBazar\Database\Models\OrderStatus,id',
+            'coupon_id'        => 'nullable|exists:PickBazar\Database\Models\Coupon,id',
+            'shop_id'          => 'nullable|exists:PickBazar\Database\Models\Shop,id',
             'amount'           => 'required|numeric',
             'paid_total'       => 'required|numeric',
             'total'            => 'required|numeric',
-            'delivery_time'    => 'string|required',
+            'delivery_time'    => 'nullable|string|required',
             'customer_contact' => 'string|required',
             'payment_gateway'  => 'string|required',
             'products'         => 'required|array',

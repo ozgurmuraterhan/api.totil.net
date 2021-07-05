@@ -14,11 +14,14 @@ use PickBazar\Enums\Permission;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use Exception;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Laravel\Socialite\Facades\Socialite;
 use PickBazar\Http\Requests\ChangePasswordRequest;
 use PickBazar\Mail\ContactAdmin;
+use PickBazar\Database\Models\Permission as ModelsPermission;
+use PickBazar\Exceptions\PickbazarException;
 
 class UserController extends CoreController
 {
@@ -59,7 +62,12 @@ class UserController extends CoreController
      */
     public function show($id)
     {
-        return $this->repository->with(['profile', 'address'])->findOrFail($id);
+        try {
+            $user = $this->repository->with(['profile', 'address', 'shop', 'managed_shop'])->findOrFail($id);
+            return $user;
+        } catch (Exception $e) {
+            throw new PickbazarException('PICKBAZAR_ERROR.NOT_FOUND');
+        }
     }
 
     /**
@@ -74,7 +82,7 @@ class UserController extends CoreController
         if ($request->user()->hasPermissionTo(Permission::SUPER_ADMIN)) {
             $user = $this->repository->findOrFail($id);
             return $this->repository->updateUser($request, $user);
-        } elseif ($request->user()->id == $id && $request->user()->hasPermissionTo(Permission::CUSTOMER)) {
+        } elseif ($request->user()->id == $id) {
             $user = $request->user();
             return $this->repository->updateUser($request, $user);
         }
@@ -91,17 +99,18 @@ class UserController extends CoreController
         try {
             return $this->repository->findOrFail($id)->delete();
         } catch (\Exception $e) {
-            return response()->json(['message' => 'User not found!'], 404);
+            throw new PickbazarException('PICKBAZAR_ERROR.NOT_FOUND');
         }
     }
 
     public function me(Request $request)
     {
         $user = $request->user();
-        $user->address = $user->address;
-        $user->profile = $user->profile;
-        $user->orders = $user->orders;
-        return $user;
+
+        if (isset($user)) {
+            return $this->repository->with(['profile', 'address', 'shops.balance', 'managed_shop.balance'])->find($user->id);
+        }
+        throw new PickbazarException('PICKBAZAR_ERROR.NOT_AUTHORIZED');
     }
 
     public function token(Request $request)
@@ -130,13 +139,17 @@ class UserController extends CoreController
 
     public function register(UserCreateRequest $request)
     {
+        $permissions = [Permission::CUSTOMER];
+        if (isset($request->permission)) {
+            $permissions[] = isset($request->permission->value) ? $request->permission->value : $request->permission;
+        }
         $user = $this->repository->create([
             'name'     => $request->name,
             'email'    => $request->email,
             'password' => Hash::make($request->password),
         ]);
 
-        $user->givePermissionTo(Permission::CUSTOMER);
+        $user->givePermissionTo($permissions);
 
         return ["token" => $user->createToken('auth_token')->plainTextToken, "permissions" => $user->getPermissionNames()];
     }
@@ -149,16 +162,20 @@ class UserController extends CoreController
             $banUser->is_active = false;
             $banUser->save();
             return $banUser;
+        } else {
+            throw new PickbazarException('PICKBAZAR_ERROR.NOT_AUTHORIZED');
         }
     }
     public function activeUser(Request $request)
     {
         $user = $request->user();
         if ($user && $user->hasPermissionTo(Permission::SUPER_ADMIN) && $user->id != $request->id) {
-            $acriveUser =  User::find($request->id);
-            $acriveUser->is_active = true;
-            $acriveUser->save();
-            return $acriveUser;
+            $activeUser =  User::find($request->id);
+            $activeUser->is_active = true;
+            $activeUser->save();
+            return $activeUser;
+        } else {
+            throw new PickbazarException('PICKBAZAR_ERROR.NOT_AUTHORIZED');
         }
     }
 
@@ -166,7 +183,7 @@ class UserController extends CoreController
     {
         $user = $this->repository->findByField('email', $request->email);
         if (count($user) < 1) {
-            return ['message' => 'User does not exist!', 'success' => false];
+            return ['message' => 'PICKBAZAR_MESSAGE.NOT_FOUND', 'success' => false];
         }
         $tokenData = DB::table('password_resets')
             ->where('email', $request->email)->first();
@@ -181,9 +198,9 @@ class UserController extends CoreController
         }
 
         if ($this->repository->sendResetEmail($request->email, $tokenData->token)) {
-            return ['message' => 'Please check your inbox for password reset email.', 'success' => true];
+            return ['message' => 'PICKBAZAR_MESSAGE.CHECK_INBOX_FOR_PASSWORD_RESET_EMAIL', 'success' => true];
         } else {
-            return ['message' => 'Something went wrong try again!', 'success' => false];
+            return ['message' => 'PICKBAZAR_MESSAGE.SOMETHING_WENT_WRONG', 'success' => false];
         }
     }
     public function verifyForgetPasswordToken(Request $request)
@@ -191,13 +208,13 @@ class UserController extends CoreController
         $tokenData = DB::table('password_resets')->where('token', $request->token)->first();
         $user = $this->repository->findByField('email', $request->email);
         if (!$tokenData) {
-            return ['message' => 'Invalid Token!', 'success' => false];
+            return ['message' => 'PICKBAZAR_MESSAGE.INVALID_TOKEN', 'success' => false];
         }
         $user = $this->repository->findByField('email', $request->email);
         if (count($user) < 1) {
-            return ['message' => 'User does not exist!', 'success' => false];
+            return ['message' => 'PICKBAZAR_MESSAGE.NOT_FOUND', 'success' => false];
         }
-        return ['message' => 'Token is valid', 'success' => true];
+        return ['message' => 'PICKBAZAR_MESSAGE.TOKEN_IS_VALID', 'success' => true];
     }
     public function resetPassword(Request $request)
     {
@@ -214,9 +231,9 @@ class UserController extends CoreController
 
             DB::table('password_resets')->where('email', $user->email)->delete();
 
-            return ['message' => 'Password Reset Successful!', 'success' => true];
+            return ['message' => 'PICKBAZAR_MESSAGE.PASSWORD_RESET_SUCCESSFUL', 'success' => true];
         } catch (\Exception $th) {
-            return ['message' => 'Something went wrong', 'success' => false];
+            return ['message' => 'PICKBAZAR_MESSAGE.SOMETHING_WENT_WRONG', 'success' => false];
         }
     }
 
@@ -227,12 +244,12 @@ class UserController extends CoreController
             if (Hash::check($request->oldPassword, $user->password)) {
                 $user->password = Hash::make($request->newPassword);
                 $user->save();
-                return ['message' => 'Password Change Successful!', 'success' => true];
+                return ['message' => 'PICKBAZAR_MESSAGE.PASSWORD_RESET_SUCCESSFUL', 'success' => true];
             } else {
-                return ['message' => 'Old Password is not correct', 'success' => false];
+                return ['message' => 'PICKBAZAR_MESSAGE.OLD_PASSWORD_INCORRECT', 'success' => false];
             }
         } catch (\Exception $th) {
-            return ['message' => 'Something went wrong', 'success' => false];
+            throw new PickbazarException('PICKBAZAR_ERROR.SOMETHING_WENT_WRONG');
         }
     }
     public function contactAdmin(Request $request)
@@ -240,10 +257,29 @@ class UserController extends CoreController
         try {
             $details = $request->only('subject', 'name', 'email', 'description');
             Mail::to(config('shop.admin_email'))->send(new ContactAdmin($details));
-            return ['message' => 'Email sent successful!', 'success' => true];
+            return ['message' => 'PICKBAZAR_MESSAGE.EMAIL_SENT_SUCCESSFUL', 'success' => true];
         } catch (\Exception $e) {
-            return ['message' => 'Something went wrong', 'success' => false];
+            throw new PickbazarException('PICKBAZAR_ERROR.SOMETHING_WENT_WRONG');
         }
+    }
+
+    public function fetchStaff(Request $request)
+    {
+        if (!isset($request->shop_id)) {
+            throw new PickbazarException('PICKBAZAR_ERROR.NOT_AUTHORIZED');
+        }
+        if ($this->repository->hasPermission($request->user(), $request->shop_id)) {
+            return User::with(['profile'])->where('shop_id', '=', $request->shop_id);
+        } else {
+            throw new PickbazarException('PICKBAZAR_ERROR.NOT_AUTHORIZED');
+        }
+    }
+
+    public function staffs(Request $request)
+    {
+        $query = $this->fetchStaff($request);
+        $limit = $request->limit ?? 15;
+        return $query->paginate($limit);
     }
 
     public function socialLogin(Request $request)
@@ -257,7 +293,7 @@ class UserController extends CoreController
         try {
             $user = Socialite::driver($provider)->userFromToken($token);
         } catch (\Exception $e) {
-            return response()->json(['error' => 'Invalid credentials provided.'], 422);
+            throw new PickbazarException('PICKBAZAR_ERROR.INVALID_CREDENTIALS');
         }
         $userCreated = User::firstOrCreate(
             [
@@ -296,7 +332,7 @@ class UserController extends CoreController
     protected function validateProvider($provider)
     {
         if (!in_array($provider, ['facebook', 'google'])) {
-            return response()->json(['error' => 'Please login using facebook or google'], 422);
+            throw new PickbazarException('PICKBAZAR_ERROR.PLEASE_LOGIN_USING_FACEBOOK_OR_GOOGLE');
         }
     }
 }

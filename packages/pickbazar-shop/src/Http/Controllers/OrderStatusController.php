@@ -7,6 +7,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use PickBazar\Database\Repositories\OrderStatusRepository;
+use PickBazar\Exceptions\PickbazarException;
 use PickBazar\Http\Requests\OrderStatusRequest;
 use Prettus\Validator\Exceptions\ValidatorException;
 
@@ -56,7 +57,7 @@ class OrderStatusController extends CoreController
         try {
             return $this->repository->findOneByFieldOrFail('name', $name);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Sorry! order status not found.'], 404);
+            throw new PickbazarException('PICKBAZAR_ERROR.NOT_FOUND');
         }
     }
 
@@ -74,7 +75,7 @@ class OrderStatusController extends CoreController
             $validatedData = $orderStatusRequest->validated();
             return $this->repository->findOrFail($id)->update($validatedData);
         } catch (\Exception $exception) {
-            return response()->json(['message' => 'Sorry! order status ID does not exist.'], 404);
+            throw new PickbazarException('PICKBAZAR_ERROR.NOT_FOUND');
         }
     }
 
@@ -89,7 +90,7 @@ class OrderStatusController extends CoreController
         try {
             return $this->repository->findOrFail($id)->delete();
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Sorry! order status ID does not exist.'], 404);
+            throw new PickbazarException('PICKBAZAR_ERROR.NOT_FOUND');
         }
     }
 }

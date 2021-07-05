@@ -1,25 +1,34 @@
 extend type Query {
-    attributes: [Attribute] @all
+    attributes(shop_id: Int @eq): [Attribute] @all
     attribute(id: ID @eq, slug: String @eq): Attribute @find
 }
 
 type Attribute {
     id: ID
     name: String
+    shop_id: Int
+    shop: Shop @belongsTo
     slug: String
     values: [AttributeValue]
 }
 
+input AttributeValueInput {
+    id: Int
+    value: String!
+    meta: String
+}
+
 input AttributeInput {
-    name: String! @rules(apply: ["min:2", "max:20", "unique:types,name"])
+    name: String! @rules(apply: ["min:2"])
+    shop_id: Int! @rules(apply: ["exists:shops,id"])
+    values: [AttributeValueInput]
 }
 
 extend type Mutation {
     createAttribute(input: AttributeInput @spread): Attribute
-        @create
-        @can(ability: "super_admin")
+        @field(resolver: "AttributeMutator@storeAttribute")
     updateAttribute(id: ID!, input: AttributeInput @spread): Attribute
-        @update
-        @can(ability: "super_admin")
-    deleteAttribute(id: ID!): Attribute @delete @can(ability: "super_admin")
+        @field(resolver: "AttributeMutator@updateAttribute")
+    deleteAttribute(id: ID!): Attribute
+        @field(resolver: "AttributeMutator@deleteAttribute")
 }

@@ -3,7 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
-use PickBazar\Enums\ProductType;
+use PickBazar\Enums\WithdrawStatus;
 
 class CreateNewPickbazarTables extends Migration
 {
@@ -28,6 +28,26 @@ class CreateNewPickbazarTables extends Migration
             $table->timestamps();
         });
 
+        Schema::create('tags', function (Blueprint $table) {
+            $table->id();
+            $table->string('name');
+            $table->string('slug');
+            $table->string('icon')->nullable();
+            $table->json('image')->nullable();
+            $table->text('details')->nullable();
+            $table->unsignedBigInteger('type_id');
+            $table->foreign('type_id')->references('id')->on('types');
+            $table->timestamps();
+            $table->softDeletes();
+        });
+
+        Schema::create('product_tag', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('product_id');
+            $table->unsignedBigInteger('tag_id');
+            $table->foreign('product_id')->references('id')->on('products')->onDelete('cascade');
+            $table->foreign('tag_id')->references('id')->on('tags')->onDelete('cascade');
+        });
         Schema::table('products', function (Blueprint $table) {
             $table->float('max_price')->nullable();
             $table->float('min_price')->nullable();
@@ -37,8 +57,82 @@ class CreateNewPickbazarTables extends Migration
             $table->unsignedBigInteger('variation_option_id')->after('product_id')->nullable();
             $table->foreign('variation_option_id')->references('id')->on('variation_options');
         });
+
+        Schema::create('shops', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('owner_id');
+            $table->foreign('owner_id')->references('id')->on('users');
+            $table->string('name')->nullable();
+            $table->string('slug')->nullable();
+            $table->text('description')->nullable();
+            $table->json('cover_image')->nullable();
+            $table->json('logo')->nullable();
+            $table->boolean('is_active')->default(false);
+            $table->json('address')->nullable();
+            $table->json('settings')->nullable();
+            $table->timestamps();
+        });
+        Schema::create('balances', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('shop_id');
+            $table->foreign('shop_id')->references('id')->on('shops');
+            $table->double('admin_commission_rate')->nullable();
+            $table->double('total_earnings')->default(0);
+            $table->double('withdrawn_amount')->default(0);
+            $table->double('current_balance')->default(0);
+            $table->json('payment_info')->nullable();
+            $table->timestamps();
+        });
+
+        Schema::table('users', function (Blueprint $table) {
+            $table->unsignedBigInteger('shop_id')->nullable();
+            $table->foreign('shop_id')->references('id')->on('shops')->onDelete('cascade');
+        });
+
+        Schema::create('category_shop', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('shop_id');
+            $table->unsignedBigInteger('category_id');
+            $table->foreign('shop_id')->references('id')->on('shops')->onDelete('cascade');
+            $table->foreign('category_id')->references('id')->on('categories')->onDelete('cascade');
+        });
+
+        Schema::create('withdraws', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('shop_id');
+            $table->foreign('shop_id')->references('id')->on('shops')->onDelete('cascade');
+            $table->float('amount');
+            $table->string('payment_method')->nullable();
+            $table->enum('status', [
+                WithdrawStatus::APPROVED,
+                WithdrawStatus::PROCESSING,
+                WithdrawStatus::REJECTED,
+                WithdrawStatus::PENDING,
+                WithdrawStatus::ON_HOLD,
+            ])->default(WithdrawStatus::PENDING);
+            $table->text('details')->nullable();
+            $table->text('note')->nullable();
+            $table->softDeletes();
+            $table->timestamps();
+        });
+
+        Schema::table('attributes', function (Blueprint $table) {
+            $table->unsignedBigInteger('shop_id')->nullable()->after('name');
+            $table->foreign('shop_id')->references('id')->on('shops')->onDelete('cascade');
+        });
+
         Schema::table('attribute_values', function (Blueprint $table) {
             $table->string('meta')->after('value')->nullable();
+        });
+        Schema::table('products', function (Blueprint $table) {
+            $table->unsignedBigInteger('shop_id')->after('price')->nullable();
+            $table->foreign('shop_id')->references('id')->on('shops')->onDelete('cascade');
+        });
+        Schema::table('orders', function (Blueprint $table) {
+            $table->unsignedBigInteger('shop_id')->after('coupon_id')->nullable();
+            $table->foreign('shop_id')->references('id')->on('shops')->onDelete('cascade');
+            $table->unsignedBigInteger('parent_id')->after('coupon_id')->nullable();
+            $table->foreign('parent_id')->references('id')->on('orders')->onDelete('cascade');
         });
 
         Schema::table('users', function (Blueprint $table) {
@@ -63,6 +157,10 @@ class CreateNewPickbazarTables extends Migration
      */
     public function down()
     {
+        Schema::dropIfExists('withdraws');
+        Schema::dropIfExists('store_settings');
         Schema::dropIfExists('variation_options');
+        Schema::dropIfExists('product_tag');
+        Schema::dropIfExists('tags');
     }
 }

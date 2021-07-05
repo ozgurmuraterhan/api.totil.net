@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Log;
+use PickBazar\Http\Controllers\TagController;
 
 class Product extends Model
 {
@@ -81,6 +82,14 @@ class Product extends Model
     /**
      * @return BelongsTo
      */
+    public function shop(): BelongsTo
+    {
+        return $this->belongsTo(Shop::class, 'shop_id');
+    }
+
+    /**
+     * @return BelongsTo
+     */
     public function shipping(): BelongsTo
     {
         return $this->belongsTo(Shipping::class, 'shipping_class_id');
@@ -92,6 +101,13 @@ class Product extends Model
     public function categories(): BelongsToMany
     {
         return $this->belongsToMany(Category::class, 'category_product');
+    }
+    /**
+     * @return BelongsToMany
+     */
+    public function tags(): BelongsToMany
+    {
+        return $this->belongsToMany(Tag::class, 'product_tag');
     }
 
     /**
@@ -115,8 +131,6 @@ class Product extends Model
      */
     public function variations(): BelongsToMany
     {
-        return $this->belongsToMany(AttributeValue::class, 'attribute_product')
-            ->withPivot('price')
-            ->withTimestamps();
+        return $this->belongsToMany(AttributeValue::class, 'attribute_product');
     }
 }

@@ -6,6 +6,8 @@ use App\Enums\RoleType;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Spatie\Permission\Traits\HasRoles;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -27,7 +29,7 @@ class User extends Authenticatable
      * @var array
      */
     protected $fillable = [
-        'name', 'email', 'password', 'is_active'
+        'name', 'email', 'password', 'is_active', 'shop_id'
     ];
 
     /**
@@ -57,14 +59,6 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
     ];
 
-    /**
-     * @return HasMany
-     */
-    public function products(): HasMany
-    {
-        return $this->hasMany(Product::class, 'vendor_id');
-    }
-
 
     /**
      * @return HasMany
@@ -88,6 +82,22 @@ class User extends Authenticatable
     public function profile(): HasOne
     {
         return $this->hasOne(Profile::class, 'customer_id');
+    }
+
+    /**
+     * @return HasOne
+     */
+    public function shops(): HasMany
+    {
+        return $this->hasMany(Shop::class, 'owner_id');
+    }
+
+    /**
+     * @return BelongsTo
+     */
+    public function managed_shop(): BelongsTo
+    {
+        return $this->belongsTo(Shop::class, 'shop_id');
     }
 
     /**

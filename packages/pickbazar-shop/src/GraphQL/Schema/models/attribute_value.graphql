@@ -1,19 +1,14 @@
 extend type Query {
-    attributeValues: [AttributeValue!]! @all
+    attributeValues(shop_id: Int @eq): [AttributeValue!]! @all
     attributeValue(id: ID @eq): AttributeValue @find
-}
-
-type VariationProductPivot {
-    price: Float
 }
 
 type AttributeValue {
     id: ID
     value: String
+    shop_id: Int
     meta: String
     attribute: Attribute @belongsTo
-    products: [Product] @belongsToMany
-    pivot: VariationProductPivot
 }
 
 input AttributeBelongTo {
@@ -23,23 +18,25 @@ input AttributeBelongTo {
 input AttributeValueCreateInput {
     value: String!
     meta: String
-    attribute: AttributeBelongTo
+    shop_id: Int! @rules(apply: ["exists:shops,id"])
+    attribute_id: Int! @rules(apply: ["exists:attributes,id"])
 }
 input AttributeValueUpdateInput {
     id: ID!
     value: String
     meta: String
-    attribute: AttributeBelongTo
+    shop_id: Int! @rules(apply: ["exists:shops,id"])
+    attribute_id: Int! @rules(apply: ["exists:attributes,id"])
 }
 
 extend type Mutation {
     createAttributeValue(
         input: AttributeValueCreateInput @spread
-    ): AttributeValue @create @can(ability: "super_admin")
+    ): AttributeValue @field(resolver: "AttributeValueMutator@store")
     updateAttributeValue(
         input: AttributeValueUpdateInput @spread
-    ): AttributeValue @update @can(ability: "super_admin")
+    ): AttributeValue @update @can(ability: "store_owner")
     deleteAttributeValue(id: ID!): AttributeValue
         @delete
-        @can(ability: "super_admin")
+        @can(ability: "store_owner")
 }

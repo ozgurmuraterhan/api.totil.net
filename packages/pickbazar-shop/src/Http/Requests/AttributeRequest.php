@@ -27,7 +27,9 @@ class AttributeRequest extends FormRequest
     public function rules()
     {
         return [
-            'name' => ['required', 'string', 'max:255', 'unique:attributes'],
+            'name'        => ['required', 'string'],
+            'shop_id'     => ['required', 'exists:PickBazar\Database\Models\Shop,id'],
+            'values'      => ['array']
         ];
     }
 

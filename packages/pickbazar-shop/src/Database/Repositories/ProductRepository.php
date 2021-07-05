@@ -7,6 +7,7 @@ use Exception;
 use Illuminate\Support\Facades\Log;
 use PickBazar\Database\Models\Product;
 use PickBazar\Enums\ProductType;
+use PickBazar\Exceptions\PickbazarException;
 use Prettus\Repository\Criteria\RequestCriteria;
 use Prettus\Repository\Exceptions\RepositoryException;
 use Prettus\Validator\Exceptions\ValidatorException;
@@ -19,6 +20,7 @@ class ProductRepository extends BaseRepository
      */
     protected $fieldSearchable = [
         'name'        => 'like',
+        'shop_id',
         'status',
         'type.slug',
         'categories.slug',
@@ -44,6 +46,7 @@ class ProductRepository extends BaseRepository
         'width',
         'in_stock',
         'is_taxable',
+        'shop_id',
     ];
 
     public function boot()
@@ -65,9 +68,13 @@ class ProductRepository extends BaseRepository
     public function storeProduct($request)
     {
         try {
-            $product = $this->create($request->only($this->dataArray));
+            $data = $request->only($this->dataArray);
+            $product = $this->create($data);
             if (isset($request['categories'])) {
                 $product->categories()->attach($request['categories']);
+            }
+            if (isset($request['tags'])) {
+                $product->tags()->attach($request['tags']);
             }
             if (isset($request['variations'])) {
                 $product->variations()->attach($request['variations']);
@@ -79,9 +86,10 @@ class ProductRepository extends BaseRepository
             $product->variation_options = $product->variation_options;
             $product->variations = $product->variations;
             $product->type = $product->type;
+            $product->tags = $product->tags;
             return $product;
         } catch (ValidatorException $e) {
-            return ['message' => "Something went wrong!", 'success' => false, 'code' => 404];
+            throw new PickbazarException('PICKBAZAR_ERROR.SOMETHING_WENT_WRONG');
         }
     }
 
@@ -91,6 +99,9 @@ class ProductRepository extends BaseRepository
             $product = $this->findOrFail($id);
             if (isset($request['categories'])) {
                 $product->categories()->sync($request['categories']);
+            }
+            if (isset($request['tags'])) {
+                $product->tags()->sync($request['tags']);
             }
             if (isset($request['variations'])) {
                 $product->variations()->sync($request['variations']);
@@ -123,9 +134,10 @@ class ProductRepository extends BaseRepository
             $product->variation_options = $product->variation_options;
             $product->variations = $product->variations;
             $product->type = $product->type;
+            $product->tags = $product->tags;
             return $product;
         } catch (ValidatorException $e) {
-            return ['message' => "Something went wrong!", 'success' => false, 'code' => 404];
+            throw new PickbazarException('PICKBAZAR_ERROR.SOMETHING_WENT_WRONG');
         }
     }
 
@@ -136,7 +148,7 @@ class ProductRepository extends BaseRepository
             $categories = $product->categories->pluck('id');
             $products = $this->whereHas('categories', function ($query) use ($categories) {
                 $query->whereIn('categories.id', $categories);
-            })->with('type')->limit($limit)->get();
+            })->with('type')->limit($limit);
             return $products;
         } catch (Exception $e) {
             return [];

@@ -8,6 +8,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use PickBazar\Database\Models\Attachment;
 use PickBazar\Database\Repositories\AttachmentRepository;
+use PickBazar\Exceptions\PickbazarException;
 use PickBazar\Http\Requests\AttachmentRequest;
 use Prettus\Validator\Exceptions\ValidatorException;
 
@@ -69,7 +70,7 @@ class AttachmentController extends CoreController
         try {
             $this->repository->findOrFail($id);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Attachment not found!'], 404);
+            throw new PickbazarException('PICKBAZAR_ERROR.NOT_FOUND');
         }
     }
 
@@ -96,7 +97,7 @@ class AttachmentController extends CoreController
         try {
             return $this->repository->findOrFail($id)->delete();
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Attachment not found!'], 404);
+            throw new PickbazarException('PICKBAZAR_ERROR.NOT_FOUND');
         }
     }
 }

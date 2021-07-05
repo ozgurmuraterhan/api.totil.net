@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use PickBazar\Database\Models\Address;
 use PickBazar\Database\Repositories\AddressRepository;
 use PickBazar\Enums\Permission;
+use PickBazar\Exceptions\PickbazarException;
 use PickBazar\Http\Requests\AddressRequest;
 use Prettus\Validator\Exceptions\ValidatorException;
 
@@ -56,7 +57,7 @@ class AddressController extends CoreController
         try {
             return $this->repository->with('customer')->findOrFail($id);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Address not found!'], 404);
+            throw new PickbazarException('PICKBAZAR_ERROR.NOT_FOUND');
         }
     }
 
@@ -73,7 +74,7 @@ class AddressController extends CoreController
             $validatedData = $request->all();
             return $this->repository->findOrFail($id)->update($validatedData);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Address not found!'], 404);
+            throw new PickbazarException('PICKBAZAR_ERROR.NOT_FOUND');
         }
     }
 
@@ -87,7 +88,7 @@ class AddressController extends CoreController
     {
         try {
             $user = $request->user();
-            if ($user->hasPermissionTo(Permission::SUPER_ADMIN)) {
+            if ($user && $user->hasPermissionTo(Permission::SUPER_ADMIN)) {
                 return $this->repository->findOrFail($id)->delete();
             } else {
                 $address = $this->repository->findOrFail($id);
@@ -96,7 +97,7 @@ class AddressController extends CoreController
                 }
             }
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Address not found!'], 404);
+            throw new PickbazarException('PICKBAZAR_ERROR.NOT_FOUND');
         }
     }
 }

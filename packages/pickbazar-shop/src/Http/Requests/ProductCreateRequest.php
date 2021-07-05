@@ -5,6 +5,7 @@ namespace PickBazar\Http\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Http\Exceptions\HttpResponseException;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use PickBazar\Enums\ProductType;
 
@@ -32,8 +33,10 @@ class ProductCreateRequest extends FormRequest
             'price'       => ['nullable', 'numeric'],
             'sale_price'  => ['nullable', 'lte:price'],
             'type_id'     => ['required', 'exists:PickBazar\Database\Models\Type,id'],
+            'shop_id'     => ['required', 'exists:PickBazar\Database\Models\Shop,id'],
             'product_type' => ['required', Rule::in([ProductType::SIMPLE, ProductType::VARIABLE])],
             'categories'  => ['array'],
+            'tags'        => ['array'],
             'variations'  => ['array'],
             'variation_options'  => ['array'],
             'quantity'    => ['nullable', 'integer'],
@@ -53,6 +56,7 @@ class ProductCreateRequest extends FormRequest
 
     public function failedValidation(Validator $validator)
     {
+        Log::debug($validator->errors());
         // TODO: Need to check from the request if it's coming from GraphQL API or not.
         throw new HttpResponseException(response()->json($validator->errors(), 422));
     }

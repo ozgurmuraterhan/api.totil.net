@@ -3,7 +3,12 @@
 
 namespace PickBazar\Database\Repositories;
 
+use Exception;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Log;
+use PickBazar\Database\Models\Shop;
+use PickBazar\Enums\Permission;
+use PickBazar\Exceptions\PickbazarException;
 use Prettus\Repository\Contracts\CacheableInterface;
 use Prettus\Repository\Traits\CacheableRepository;
 use Prettus\Repository\Eloquent\BaseRepository as Repository;
@@ -37,7 +42,7 @@ abstract class BaseRepository extends Repository implements CacheableInterface
     {
         $model = $this->findByField($field, $value, $columns = ['*']);
         if (!$model->first()) {
-            return response()->json(['message' => 'Not found!'], 404);
+            throw new PickbazarException('PICKBAZAR_ERROR.NOT_FOUND');
         }
         return $model->first();
     }
@@ -151,5 +156,29 @@ abstract class BaseRepository extends Repository implements CacheableInterface
     public function getModel()
     {
         return $this->model;
+    }
+
+    public function hasPermission($user, $shop_id)
+    {
+        try {
+            $shop = Shop::findOrFail($shop_id);
+        } catch (Exception $e) {
+            return false;
+        }
+        if (!$shop->is_active) {
+            throw new PickbazarException('PICKBAZAR_ERROR.SHOP_NOT_APPROVED');
+        }
+        if ($user && $user->hasPermissionTo(Permission::SUPER_ADMIN)) {
+            return true;
+        } elseif ($user &&  $user->hasPermissionTo(Permission::STORE_OWNER)) {
+            if ($shop->owner_id === $user->id) {
+                return true;
+            }
+        } elseif ($user &&  $user->hasPermissionTo(Permission::STAFF)) {
+            if ($shop->staffs->contains($user)) {
+                return true;
+            }
+        }
+        return false;
     }
 }

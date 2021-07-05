@@ -1,0 +1,110 @@
+extend type Query {
+    shops(
+        text: String @where(operator: "like", key: "name")
+        is_active: Boolean @eq
+        orderBy: _ @orderBy(columns: ["updated_at", "created_at", "name"])
+    ): [Shop] @paginate(defaultCount: 10)
+    staffs(shop_id: Int!, orderBy: String, sortedBy: String): [User]
+        @paginate(
+            builder: "PickBazar\\GraphQL\\Queries\\UserQuery@fetchStaff"
+            defaultCount: 15
+        )
+    shop(id: ID @eq, slug: String @eq): Shop @find
+}
+
+type Shop {
+    id: ID
+    owner_id: Int
+    owner: User @belongsTo
+    staffs: [User] @hasMany
+    is_active: Boolean
+    orders_count: Int @count(relation: "orders")
+    products_count: Int @count(relation: "products")
+    balance: Balance @hasOne
+    name: String
+    slug: String
+    description: String
+    cover_image: Attachment
+    logo: Attachment
+    name: String
+    address: UserAddress
+    settings: String
+    created_at: DateTime
+    updated_at: DateTime
+}
+
+type Balance {
+    id: ID
+    admin_commission_rate: Float
+    shop: Shop @belongsTo
+    total_earnings: Float
+    withdrawn_amount: Float
+    current_balance: Float
+    payment_info: PaymentInfo
+}
+input BalanceInput {
+    id: ID
+    payment_info: PaymentInfoInput
+}
+
+input PaymentInfoInput {
+    account: Float
+    name: String
+    email: String
+    bank: String
+}
+
+type PaymentInfo {
+    account: String
+    name: String
+    email: String
+    bank: String
+}
+
+input ShopInput {
+    name: String!
+    description: String
+    cover_image: AttachmentInput
+    logo: AttachmentInput
+    address: UserAddressInput
+    settings: String
+    categories: [ID]
+    balance: BalanceInput
+}
+
+input ApproveShopInput {
+    id: ID!
+    admin_commission_rate: Float!
+}
+
+input AddStaffInput {
+    email: String!
+        @rules(
+            apply: ["unique:users,email"]
+            messages: { unique: "Sorry! this email has been already taken." }
+        )
+    password: String!
+    name: String!
+    shop_id: Int! @rules(apply: ["exists:shops,id"])
+}
+
+extend type Mutation {
+    approveShop(input: ApproveShopInput @spread): Shop
+        @field(resolver: "ShopMutator@approveShop")
+        @can(ability: "super_admin")
+    disApproveShop(id: ID!): Shop
+        @field(resolver: "ShopMutator@disApproveShop")
+        @can(ability: "super_admin")
+    addStaff(input: AddStaffInput @spread): Boolean
+        @field(resolver: "ShopMutator@addStaff")
+    removeStaff(id: ID!): User @field(resolver: "ShopMutator@removeStaff")
+    deleteShop(id: ID!): Shop
+        @field(resolver: "ShopMutator@deleteShop")
+        @can(ability: "store_owner")
+    createShop(input: ShopInput! @spread): Shop
+        @field(resolver: "ShopMutator@createShop")
+        @can(ability: "store_owner")
+    updateShop(id: ID!, input: ShopInput! @spread): Shop
+        @field(resolver: "ShopMutator@updateShop")
+        @can(ability: "store_owner")
+}

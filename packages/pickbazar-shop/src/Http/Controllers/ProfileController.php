@@ -7,6 +7,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use PickBazar\Database\Models\Profile;
 use PickBazar\Database\Repositories\ProfileRepository;
+use PickBazar\Exceptions\PickbazarException;
 use PickBazar\Http\Requests\ProfileRequest;
 use Prettus\Validator\Exceptions\ValidatorException;
 
@@ -55,7 +56,7 @@ class ProfileController extends CoreController
         try {
             return $this->repository->with('customer')->findOrFail($id);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Profile not found!'], 404);
+            throw new PickbazarException('PICKBAZAR_ERROR.NOT_FOUND');
         }
     }
 
@@ -72,7 +73,7 @@ class ProfileController extends CoreController
             $validatedData = $request->all();
             return $this->repository->findOrFail($id)->update($validatedData);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Profile not found!'], 404);
+            throw new PickbazarException('PICKBAZAR_ERROR.NOT_FOUND');
         }
     }
 
@@ -87,7 +88,7 @@ class ProfileController extends CoreController
         try {
             return $this->repository->findOrFail($id)->delete();
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Profile not found!'], 404);
+            throw new PickbazarException('PICKBAZAR_ERROR.NOT_FOUND');
         }
     }
 }

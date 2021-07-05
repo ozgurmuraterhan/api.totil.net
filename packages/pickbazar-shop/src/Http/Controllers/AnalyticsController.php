@@ -2,19 +2,15 @@
 
 namespace PickBazar\Http\Controllers;
 
-use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use PickBazar\Database\Models\Address;
 use PickBazar\Database\Repositories\AddressRepository;
-use PickBazar\Http\Requests\AddressRequest;
-use Prettus\Validator\Exceptions\ValidatorException;
 use Carbon\Carbon;
 use Illuminate\Validation\ValidationException;
-use PickBazar\Database\Models\Order;
 use PickBazar\Database\Models\Product;
+use PickBazar\Database\Models\Shop;
 use PickBazar\Enums\Permission;
+use PickBazar\Exceptions\PickbazarException;
 use Spatie\Permission\Models\Permission as ModelsPermission;
 
 class AnalyticsController extends CoreController
@@ -29,16 +25,45 @@ class AnalyticsController extends CoreController
 
     public function analytics(Request $request)
     {
-        if ($request->user() && $request->user()->hasPermissionTo(Permission::SUPER_ADMIN)) {
-            $totalRevenue = DB::table('orders')->whereDate('created_at', '>', Carbon::now()->subDays(30))->sum('paid_total');
-            $todaysRevenue = DB::table('orders')->whereDate('created_at', '>', Carbon::now()->subDays(1))->sum('paid_total');
-            $totalOrders = DB::table('orders')->whereDate('created_at', '>', Carbon::now()->subDays(30))->count();
+        $user = $request->user();
+        if ($user && ($user->hasPermissionTo(Permission::SUPER_ADMIN) || $user->hasPermissionTo(Permission::STORE_OWNER))) {
+            $totalRevenueQuery = DB::table('orders')->whereDate('created_at', '>', Carbon::now()->subDays(30));
+            if ($user && $user->hasPermissionTo(Permission::SUPER_ADMIN)) {
+                $totalRevenue = $totalRevenueQuery->sum('paid_total');
+            } else {
+                $totalRevenue = $totalRevenueQuery->where('shop_id', '=', $user->id)->sum('paid_total');
+            }
+
+            $todaysRevenueQuery = DB::table('orders')->whereDate('created_at', '>', Carbon::now()->subDays(1));
+
+            if ($user && $user->hasPermissionTo(Permission::SUPER_ADMIN)) {
+                $todaysRevenue = $todaysRevenueQuery->sum('paid_total');
+            } else {
+                $todaysRevenue = $todaysRevenueQuery->where('shop_id', '=', $user->id)->sum('paid_total');
+            }
+            $totalOrdersQuery = DB::table('orders')->whereDate('created_at', '>', Carbon::now()->subDays(30));
+            if ($user && $user->hasPermissionTo(Permission::SUPER_ADMIN)) {
+                $totalOrders = $totalOrdersQuery->count();
+            } else {
+                $totalOrders = $totalOrdersQuery->where('shop_id', '=', $user->id)->count();
+            }
+            if ($user && $user->hasPermissionTo(Permission::SUPER_ADMIN)) {
+                $totalShops = Shop::count();
+            } else {
+                $totalShops = Shop::where('owner_id', '=', $user->id)->count();
+            }
             $customerPermission = ModelsPermission::where('name', Permission::CUSTOMER)->first();
             $newCustomers = $customerPermission->users()->whereDate('created_at', '>', Carbon::now()->subDays(30))->count();
-            $totalYearSaleByMonth =
-                $orders = DB::table('orders')->selectRaw(
+            $totalYearSaleByMonthQuery =
+                DB::table('orders')->selectRaw(
                     "sum(paid_total) as total, DATE_FORMAT(created_at,'%M') as month"
-                )->whereYear('created_at', date('Y'))->groupBy('month')->get();
+                )->whereYear('created_at', date('Y'));
+            if ($user && $user->hasPermissionTo(Permission::SUPER_ADMIN)) {
+                $totalYearSaleByMonth = $totalYearSaleByMonthQuery->groupBy('month')->get();
+            } else {
+                $totalYearSaleByMonth = $totalYearSaleByMonthQuery->where('shop_id', '=', $user->id)->groupBy('month')->get();
+            }
+
 
             $months = [
                 "January",
@@ -68,21 +93,26 @@ class AnalyticsController extends CoreController
             }
             return [
                 'totalRevenue' => $totalRevenue,
+                'totalShops' => $totalShops,
                 'todaysRevenue' => $todaysRevenue,
                 'totalOrders' => $totalOrders,
                 'newCustomers' =>  $newCustomers,
                 'totalYearSaleByMonth' => $processedData
             ];
         }
-        throw ValidationException::withMessages([
-            'error' => ['User is not logged in or doesn\'t have enough permission.'],
-        ]);
+        throw new PickbazarException('PICKBAZAR_ERROR.NOT_AUTHORIZED');
     }
 
     public function popularProducts(Request $request)
     {
         $limit = $request->limit ? $request->limit : 10;
-        $products = Product::withCount('orders')->orderBy('orders_count', 'desc')->limit($limit)->get();
+        $products_query = Product::withCount('orders')->with(['type', 'shop'])->orderBy('orders_count', 'desc')->limit($limit);
+        if (isset($request->shop_id)) {
+            $products = $products_query->where('shop_id', "=", $request->shop_id)->get();
+        } else {
+            $products = $products_query->get();
+        }
+
         return $products;
     }
 }

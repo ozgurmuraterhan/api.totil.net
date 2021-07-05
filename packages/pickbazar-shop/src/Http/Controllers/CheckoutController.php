@@ -7,8 +7,7 @@ use PickBazar\Http\Requests\CheckoutVerifyRequest;
 use Pickbazar\Enums\Permission;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
-
-
+use PickBazar\Exceptions\PickbazarException;
 
 class CheckoutController extends CoreController
 {
@@ -31,7 +30,7 @@ class CheckoutController extends CoreController
         if ($user->can(Permission::CUSTOMER)) {
             return $this->repository->verify($request);
         } else {
-            return new JsonResponse('Not Authorized', 403);
+            throw new PickbazarException('PICKBAZAR_ERROR.NOT_AUTHORIZED');
         }
     }
 }

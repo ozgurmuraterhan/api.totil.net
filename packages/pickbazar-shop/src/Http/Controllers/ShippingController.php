@@ -9,6 +9,7 @@ use Illuminate\Support\Collection;
 use PickBazar\Http\Requests\CreateShippingRequest;
 use PickBazar\Http\Requests\UpdateShippingRequest;
 use PickBazar\Database\Repositories\ShippingRepository;
+use PickBazar\Exceptions\PickbazarException;
 use Prettus\Validator\Exceptions\ValidatorException;
 
 class ShippingController extends CoreController
@@ -55,7 +56,7 @@ class ShippingController extends CoreController
         try {
             return $this->repository->findOrFail($id);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Sorry! Shipping not found.'], 404);
+            throw new PickbazarException('PICKBAZAR_ERROR.NOT_FOUND');
         }
     }
 
@@ -72,7 +73,7 @@ class ShippingController extends CoreController
             $validateData = $request->validated();
             return $this->repository->findOrFail($id)->update($validateData);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Sorry! Shipping ID does not exist.'], 404);
+            throw new PickbazarException('PICKBAZAR_ERROR.NOT_FOUND');
         }
     }
 
@@ -87,7 +88,7 @@ class ShippingController extends CoreController
         try {
             return $this->repository->findOrFail($id)->delete();
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Sorry! Shipping ID does not exist.'], 404);
+            throw new PickbazarException('PICKBAZAR_ERROR.NOT_FOUND');
         }
     }
 }

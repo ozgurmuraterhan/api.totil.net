@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use PickBazar\Database\Models\Category;
 use PickBazar\Database\Repositories\CategoryRepository;
+use PickBazar\Exceptions\PickbazarException;
 use PickBazar\Http\Requests\CategoryCreateRequest;
 use PickBazar\Http\Requests\CategoryUpdateRequest;
 use Prettus\Validator\Exceptions\ValidatorException;
@@ -70,7 +71,7 @@ class CategoryController extends CoreController
         try {
             return $this->repository->with(['type', 'parent', 'children'])->findOrFail($id);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Category not found!'], 404);
+            throw new PickbazarException('PICKBAZAR_ERROR.NOT_FOUND');
         }
     }
 
@@ -87,7 +88,7 @@ class CategoryController extends CoreController
             $validatedData = $request->validated();
             return $this->repository->findOrFail($id)->update($validatedData);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Category not found!'], 404);
+            throw new PickbazarException('PICKBAZAR_ERROR.NOT_FOUND');
         }
     }
 
@@ -102,7 +103,7 @@ class CategoryController extends CoreController
         try {
             return $this->repository->findOrFail($id)->delete();
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Category not found!'], 404);
+            throw new PickbazarException('PICKBAZAR_ERROR.NOT_FOUND');
         }
     }
 }

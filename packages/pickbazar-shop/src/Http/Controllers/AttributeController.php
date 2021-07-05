@@ -5,9 +5,10 @@ namespace PickBazar\Http\Controllers;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use PickBazar\Database\Repositories\AttributeRepository;
+use PickBazar\Exceptions\PickbazarException;
 use PickBazar\Http\Requests\AttributeRequest;
-use Prettus\Validator\Exceptions\ValidatorException;
 
 class AttributeController extends CoreController
 {
@@ -27,7 +28,7 @@ class AttributeController extends CoreController
      */
     public function index(Request $request)
     {
-        return $this->repository->with('values')->all();
+        return $this->repository->with(['values', 'shop'])->all();
     }
 
     /**
@@ -39,8 +40,11 @@ class AttributeController extends CoreController
      */
     public function store(AttributeRequest $request)
     {
-        $validatedData = $request->all();
-        return $this->repository->create($validatedData);
+        if ($this->repository->hasPermission($request->user(), $request->shop_id)) {
+            return $this->repository->storeAttribute($request);
+        } else {
+            throw new PickbazarException('PICKBAZAR_ERROR.NOT_AUTHORIZED');
+        }
     }
 
     /**
@@ -54,7 +58,7 @@ class AttributeController extends CoreController
         try {
             return $this->repository->with('values')->findOrFail($id);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Attribute Type not found!'], 404);
+            throw new PickbazarException('PICKBAZAR_ERROR.NOT_FOUND');
         }
     }
 
@@ -67,11 +71,22 @@ class AttributeController extends CoreController
      */
     public function update(AttributeRequest $request, $id)
     {
-        try {
-            $validatedData = $request->all();
-            return $this->repository->findOrFail($id)->update($validatedData);
-        } catch (\Exception $e) {
-            return response()->json(['message' => 'Attribute Type not found!'], 404);
+        $request->id = $id;
+        return $this->updateAttribute($request);
+    }
+
+    public function updateAttribute(AttributeRequest $request)
+    {
+
+        if ($this->repository->hasPermission($request->user(), $request->shop_id)) {
+            try {
+                $attribute = $this->repository->with('values')->findOrFail($request->id);
+            } catch (\Exception $e) {
+                throw new PickbazarException('PICKBAZAR_ERROR.NOT_FOUND');
+            }
+            return $this->repository->updateAttribute($request, $attribute);
+        } else {
+            throw new PickbazarException('PICKBAZAR_ERROR.NOT_AUTHORIZED');
         }
     }
 
@@ -81,12 +96,24 @@ class AttributeController extends CoreController
      * @param int $id
      * @return JsonResponse
      */
-    public function destroy($id)
+    public function destroy(Request $request, $id)
+    {
+        $request->id = $id;
+        return $this->deleteAttribute($request);
+    }
+
+    public function deleteAttribute(Request $request)
     {
         try {
-            return $this->repository->findOrFail($id)->delete();
+            $attribute = $this->repository->findOrFail($request->id);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Attribute Type not found!'], 404);
+            throw new PickbazarException('PICKBAZAR_ERROR.NOT_FOUND');
+        }
+        if ($this->repository->hasPermission($request->user(), $attribute->shop->id)) {
+            $attribute->delete();
+            return $attribute;
+        } else {
+            throw new PickbazarException('PICKBAZAR_ERROR.NOT_AUTHORIZED');
         }
     }
 }

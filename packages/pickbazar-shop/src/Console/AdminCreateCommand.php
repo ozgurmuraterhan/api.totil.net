@@ -24,6 +24,8 @@ class AdminCreateCommand extends Command
 
             Permission::firstOrCreate(['name' => UserPermission::SUPER_ADMIN]);
             Permission::firstOrCreate(['name' => UserPermission::CUSTOMER]);
+            Permission::firstOrCreate(['name' => UserPermission::STORE_OWNER]);
+            Permission::firstOrCreate(['name' => UserPermission::STAFF]);
 
             $name = 'admin';
             $email = "admin@redq.io";
@@ -53,7 +55,13 @@ class AdminCreateCommand extends Command
                 'email' =>  $email,
                 'password' =>  Hash::make($password),
             ]);
-            $user->givePermissionTo(UserPermission::SUPER_ADMIN);
+            $user->givePermissionTo(
+                [
+                    UserPermission::SUPER_ADMIN,
+                    UserPermission::STORE_OWNER,
+                    UserPermission::CUSTOMER,
+                ]
+            );
             $this->info('User Creation Successful!');
         } catch (\Exception $e) {
             $this->error($e->getMessage());

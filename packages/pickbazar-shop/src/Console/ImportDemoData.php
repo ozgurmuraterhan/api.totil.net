@@ -45,9 +45,33 @@ class ImportDemoData extends Command
         $attachments_sql = file_get_contents($attachments_path);
         DB::statement($attachments_sql);
 
+        $permissions_path = public_path('sql/permissions.sql');
+        $permissions_sql = file_get_contents($permissions_path);
+        DB::statement($permissions_sql);
+
         $types_path = public_path('sql/types.sql');
         $types_sql = file_get_contents($types_path);
         DB::statement($types_sql);
+
+        $users_path = public_path('sql/users.sql');
+        $users_sql = file_get_contents($users_path);
+        DB::statement($users_sql);
+
+        $user_profiles_path = public_path('sql/user_profiles.sql');
+        $user_profiles_sql = file_get_contents($user_profiles_path);
+        DB::statement($user_profiles_sql);
+
+        $model_has_permissions_path = public_path('sql/model_has_permissions.sql');
+        $model_has_permissions_sql = file_get_contents($model_has_permissions_path);
+        DB::statement($model_has_permissions_sql);
+
+        $shops_path = public_path('sql/shops.sql');
+        $shops_sql = file_get_contents($shops_path);
+        DB::statement($shops_sql);
+
+        $balances_path = public_path('sql/balances.sql');
+        $balances_sql = file_get_contents($balances_path);
+        DB::statement($balances_sql);
 
         $attributes_path = public_path('sql/attributes.sql');
         $attributes_sql = file_get_contents($attributes_path);
@@ -88,10 +112,6 @@ class ImportDemoData extends Command
         $settings_path = public_path('sql/settings.sql');
         $settings_sql = file_get_contents($settings_path);
         DB::statement($settings_sql);
-
-        $permissions_path = public_path('sql/permissions.sql');
-        $permissions_sql = file_get_contents($permissions_path);
-        DB::statement($permissions_sql);
 
         $shipping_classes_path = public_path('sql/shipping_classes.sql');
         $shipping_classes_sql = file_get_contents($shipping_classes_path);

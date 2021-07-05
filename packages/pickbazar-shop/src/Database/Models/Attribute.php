@@ -3,11 +3,10 @@
 namespace PickBazar\Database\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Cviebrock\EloquentSluggable\Sluggable;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Attribute extends Model
 {
@@ -38,5 +37,13 @@ class Attribute extends Model
     public function values(): HasMany
     {
         return $this->hasMany(AttributeValue::class, 'attribute_id');
+    }
+
+    /**
+     * @return BelongsToMany
+     */
+    public function shop(): BelongsTo
+    {
+        return $this->belongsTo(Shop::class, 'shop_id');
     }
 }

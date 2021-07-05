@@ -27,10 +27,11 @@ class AttributeValueRequest extends FormRequest
     public function rules()
     {
         return [
-            'value'        => ['required', 'string', 'max:255'],
-            'meta'        => ['nullable', 'string'],
-            'price'        => ['numeric'],
-            'attribute_id' => ['required', 'exists:PickBazar\Database\Models\Attribute,id'],
+            'value'         => ['required', 'string', 'max:255'],
+            'meta'          => ['nullable', 'string'],
+            'price'         => ['numeric'],
+            'shop_id'       => ['required', 'exists:PickBazar\Database\Models\Shop,id'],
+            'attribute_id'  => ['required', 'exists:PickBazar\Database\Models\Attribute,id'],
         ];
     }
 

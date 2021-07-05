@@ -7,6 +7,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use PickBazar\Database\Models\Address;
 use PickBazar\Database\Repositories\SettingsRepository;
+use PickBazar\Exceptions\PickbazarException;
 use PickBazar\Http\Requests\SettingsRequest;
 use Prettus\Validator\Exceptions\ValidatorException;
 
@@ -59,7 +60,7 @@ class SettingsController extends CoreController
         try {
             return $this->repository->first();
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Something went wrong!'], 404);
+            throw new PickbazarException('PICKBAZAR_ERROR.NOT_FOUND');
         }
     }
 
@@ -89,9 +90,6 @@ class SettingsController extends CoreController
      */
     public function destroy($id)
     {
-        return [
-            'message' => 'Action not valid',
-            'success' => true
-        ];
+        throw new PickbazarException('PICKBAZAR_ERROR.ACTION_NOT_VALID');
     }
 }
