@@ -59,6 +59,38 @@ class CheckoutRepository
     {
         try {
             $settings = Settings::first();
+            //my code here
+            if (!empty($_SERVER['HTTP_CLIENT_IP'])) {
+
+                $ip = $_SERVER['HTTP_CLIENT_IP'];
+            } elseif (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+
+                $ip = $_SERVER['HTTP_X_FORWARDED_FOR'];
+            } else {
+
+                $ip = $_SERVER['REMOTE_ADDR'];
+            }
+            $ip = '94.122.34.179';
+            $client = json_decode(file_get_contents("http://ipinfo.io/{$ip}/json"));
+
+
+
+            $midRes = $settings['options'];
+            switch ($client->country) {
+                case 'TR':
+                    $midRes['shippingClass'] = '2';
+                    break;
+
+                default:
+                    $midRes['shippingClass'] = '1';
+                    break;
+            }
+
+
+            $settings['options'] = $midRes;
+
+
+            // end my code
             $class_id = $settings['options']['shippingClass'];
             if ($class_id) {
                 $shipping_class = Shipping::find($class_id);

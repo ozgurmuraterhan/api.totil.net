@@ -29,7 +29,40 @@ class SettingsController extends CoreController
      */
     public function index(Request $request)
     {
-        return $this->repository->first();
+        if (!empty($_SERVER['HTTP_CLIENT_IP'])) {
+
+            $ip = $_SERVER['HTTP_CLIENT_IP'];
+        } elseif (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+
+            $ip = $_SERVER['HTTP_X_FORWARDED_FOR'];
+        } else {
+
+            $ip = $_SERVER['REMOTE_ADDR'];
+        }
+        $ip = '94.122.34.179';
+        $client = json_decode(file_get_contents("http://ipinfo.io/{$ip}/json"));
+
+
+        $res = $this->repository->first();
+
+        $midRes = $res['options'];
+        switch ($client->country) {
+            case 'TR':
+                $midRes['shippingClass'] = '2';
+                break;
+
+            default:
+                $midRes['shippingClass'] = '1';
+                break;
+        }
+
+
+        $res['options'] = $midRes;
+
+
+        return $res;
+
+        //return $this->repository->find(2);
     }
 
     /**
