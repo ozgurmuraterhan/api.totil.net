@@ -39,7 +39,7 @@ class SettingsController extends CoreController
 
             $ip = $_SERVER['REMOTE_ADDR'];
         }
-        $ip = '94.122.34.179';
+        //$ip = '94.122.34.179';
         $client = json_decode(file_get_contents("http://ipinfo.io/{$ip}/json"));
 
 
